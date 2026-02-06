@@ -1,4 +1,4 @@
-package io.github.devcavin.entity;
+package io.github.devcavin.domain.entity;
 
 import io.github.devcavin.domain.enums.BackupStatus;
 import io.github.devcavin.domain.valueobject.BackupName;
