@@ -12,12 +12,14 @@ public class LocalArchiveStorage implements ArchiveStorage {
     @Override
     public void store(Archive archive) {
         try {
-            Path destinationDirectory = archive.getDestinationDirectory().getParent();
+            Path destinationDirectory = archive.getDestinationDirectory();
             Files.createDirectories(destinationDirectory);
 
-            Path finalPath = destinationDirectory.resolve(archive.getDestinationDirectory().getFileName());
+            String filename = String.format("backup-%d.zip", System.currentTimeMillis());
+            Path finalPath = destinationDirectory.resolve(filename);
 
-            Files.move(archive.getDestinationDirectory(), finalPath, StandardCopyOption.REPLACE_EXISTING);
+            Files.move(archive.getPath(), finalPath, StandardCopyOption.REPLACE_EXISTING);
+
         } catch (IOException e) {
             throw new RuntimeException("Failed to store archive", e);
         }

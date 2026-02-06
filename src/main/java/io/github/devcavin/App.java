@@ -56,7 +56,7 @@ public class App {
         // Demo
         UUID jobId = createJob.execute(
                 "demo-backup",
-                "/home/cavin/Documents",
+                "/home/cavin/Documents/demo-backup",
                 "/home/cavin/backups"
         );
 
