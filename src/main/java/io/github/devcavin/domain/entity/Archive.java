@@ -9,16 +9,22 @@ public class Archive {
     private final UUID id;
     private final UUID backupJobId;
     private final Path path;
+    private final Path destinationDirectory;
     private final Long sizeInBytes;
     private final Instant creationAt;
 
 
-    public Archive(UUID backupJobId, Path path, Long sizeInBytes) {
+    public Archive(UUID backupJobId, Path path, Path destinationDirectory, Long sizeInBytes) {
         this.id = UUID.randomUUID();
         this.backupJobId = Objects.requireNonNull(backupJobId);
-        this.path = path;
+        this.path = Objects.requireNonNull(path);
+        this.destinationDirectory = destinationDirectory;
         this.sizeInBytes = sizeInBytes;
         this.creationAt = Instant.now();
+    }
+
+    public Path getDestinationDirectory() {
+        return destinationDirectory;
     }
 
     public Path getPath() {

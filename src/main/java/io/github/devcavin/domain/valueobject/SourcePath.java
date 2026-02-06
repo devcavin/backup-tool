@@ -23,6 +23,10 @@ public class SourcePath {
             throw new IllegalArgumentException("Source path is not readable: %s".formatted(resolvePath));
         }
 
+        if (!Files.isDirectory(resolvePath)) {
+            throw new IllegalArgumentException("Source path is not a directory: %s".formatted(resolvePath));
+        }
+
         this.path = resolvePath;
     }
 
