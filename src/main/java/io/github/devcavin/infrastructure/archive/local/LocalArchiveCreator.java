@@ -4,46 +4,59 @@ import io.github.devcavin.domain.entity.Archive;
 import io.github.devcavin.domain.entity.BackupJob;
 import io.github.devcavin.domain.service.ArchiveCreator;
 
-import java.io.FileOutputStream;
+import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.file.*;
+import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 public class LocalArchiveCreator implements ArchiveCreator {
+
     @Override
-    public Archive createArchive(BackupJob backupJob) {
+    public Archive createArchive(BackupJob job) {
+        Path source = job.getSourcePath().getPath();
+
         try {
-            Path sourcePath = backupJob.getSourcePath().getPath();
             Path tempFile = Files.createTempFile("backup-", ".zip");
 
-            try(ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(tempFile.toFile()))) {
-                Files.walk(sourcePath)
-                        .filter(path -> !Files.isDirectory(sourcePath))
-                        .forEach(path -> addToZip(sourcePath, path, zos));
+            try (Stream<Path> paths = Files.walk(source);
+                 ZipOutputStream zos =
+                         new ZipOutputStream(Files.newOutputStream(tempFile))) {
+
+                paths
+                        .filter(Files::isRegularFile)
+                        .forEach(path -> addToZip(source, path, zos));
             }
 
             long size = Files.size(tempFile);
 
             return new Archive(
-                    backupJob.getId(),
+                    job.getId(),
                     tempFile,
+                    job.getDestinationPath().getPath(),
                     size
             );
+
         } catch (IOException e) {
-            throw new RuntimeException("Failed to create archive.", e);
+            throw new RuntimeException("Failed to create archive", e);
         }
     }
 
     private void addToZip(Path root, Path file, ZipOutputStream zos) {
         try {
-            ZipEntry entry = new ZipEntry(root.relativize(root).toString());
+            String entryName = root
+                    .relativize(file)
+                    .toString()
+                    .replace(File.separatorChar, '/');
+
+            ZipEntry entry = new ZipEntry(entryName);
             zos.putNextEntry(entry);
             Files.copy(file, zos);
             zos.closeEntry();
+
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Failed to add file to zip: " + file, e);
         }
     }
 }
