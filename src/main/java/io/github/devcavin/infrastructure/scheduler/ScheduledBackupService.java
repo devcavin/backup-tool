@@ -9,8 +9,7 @@ import java.util.concurrent.TimeUnit;
 
 public class ScheduledBackupService {
     private final ScheduledExecutorService scheduler;
-    private final RunBackupJobUseCase  runBackupJobUseCase;
-
+    private final RunBackupJobUseCase runBackupJobUseCase;
 
     public ScheduledBackupService(RunBackupJobUseCase runBackupJobUseCase) {
         this.scheduler = Executors.newScheduledThreadPool(1);
@@ -19,35 +18,41 @@ public class ScheduledBackupService {
 
     /**
      * Schedule a backup job to run at fixed intervals
-     * @param jobId The backup job id to run
-     * @param intervalMinutes How often to run the job (in minutes)
+     * @param jobId The backup job ID to run
+     * @param intervalMinutes How often to run the backup (in minutes)
      */
-
     public void scheduleBackup(UUID jobId, long intervalMinutes) {
-        System.out.printf("Scheduling backup job with id: %s to run every %d minutes\n", jobId, intervalMinutes);
+        System.out.println("Scheduling backup job " + jobId + " to run every " + intervalMinutes + " minutes");
 
-        scheduler.scheduleAtFixedRate(() -> {
-            try {
-                System.out.printf("Running the scheduled backup job with id: %s\n", jobId);
-                runBackupJobUseCase.execute(jobId);
-                System.out.println("Scheduled backup completed successfully");
-            } catch (Exception e) {
-                System.err.printf("Scheduled backup job with id %s failed",  jobId);
-                e.printStackTrace(); // will add logging later
-            }
-        },
-                0,  // delay 0 which run immediately
+        scheduler.scheduleAtFixedRate(
+                () -> {
+                    try {
+                        System.out.println("\n" + "=".repeat(50));
+                        System.out.println("Running scheduled backup: " + jobId);
+                        System.out.println("Time: " + java.time.Instant.now());
+                        System.out.println("=".repeat(50));
+                        runBackupJobUseCase.execute(jobId);
+                        System.out.println("Scheduled backup completed successfully");
+                    } catch (IllegalStateException e) {
+                        System.err.println("Backup validation failed: " + e.getMessage());
+                        System.err.println("This backup will be skipped. Next run in " + intervalMinutes + " minutes.");
+                    } catch (Exception e) {
+                        System.err.println("Scheduled backup failed: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                },
+                0, // Initial delay (0 = run immediately)
                 intervalMinutes,
-                TimeUnit.MINUTES);
+                TimeUnit.MINUTES
+        );
     }
 
     /**
-     * Shutting down the scheduler gracefully
+     * Shutdown the scheduler gracefully
      */
     public void shutdown() {
-        System.out.println("Shutting down the scheduler...");
+        System.out.println("Shutting down backup scheduler...");
         scheduler.shutdown();
-
         try {
             if (!scheduler.awaitTermination(60, TimeUnit.SECONDS)) {
                 scheduler.shutdownNow();
@@ -55,7 +60,6 @@ public class ScheduledBackupService {
         } catch (InterruptedException e) {
             scheduler.shutdownNow();
             Thread.currentThread().interrupt();
-            // throw new RuntimeException(e);
         }
     }
 }
