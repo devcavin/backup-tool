@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 
 public class InMemoryArchiveRepository implements ArchiveRepository {
     private final Map<UUID, Archive> store = new ConcurrentHashMap<>();
+
     @Override
     public void save(Archive archive) {
         store.put(archive.getId(), archive);

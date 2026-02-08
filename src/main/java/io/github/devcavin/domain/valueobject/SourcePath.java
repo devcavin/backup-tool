@@ -1,9 +1,11 @@
 package io.github.devcavin.domain.valueobject;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 public class SourcePath {
     private final Path path;
@@ -27,7 +29,19 @@ public class SourcePath {
             throw new IllegalArgumentException("Source path is not a directory: %s".formatted(resolvePath));
         }
 
+        if (isDirectoryEmpty(resolvePath)) {
+            throw new IllegalArgumentException("Source directory is empty: %s".formatted(resolvePath));
+        }
+
         this.path = resolvePath;
+    }
+
+    private boolean isDirectoryEmpty(Path directory) {
+        try (Stream<Path> entries = Files.list(directory)) {
+            return entries.findFirst().isEmpty();
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Failed to read source directory: %s".formatted(directory), e);
+        }
     }
 
     public Path getPath() {

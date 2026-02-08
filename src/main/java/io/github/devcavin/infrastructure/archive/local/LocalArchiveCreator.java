@@ -7,6 +7,7 @@ import io.github.devcavin.domain.service.ArchiveCreator;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -19,6 +20,7 @@ public class LocalArchiveCreator implements ArchiveCreator {
 
         try {
             Path tempFile = Files.createTempFile("backup-", ".zip");
+            AtomicInteger fileCount = new AtomicInteger(0);
 
             try (Stream<Path> paths = Files.walk(source);
                  ZipOutputStream zos =
@@ -26,10 +28,25 @@ public class LocalArchiveCreator implements ArchiveCreator {
 
                 paths
                         .filter(Files::isRegularFile)
-                        .forEach(path -> addToZip(source, path, zos));
+                        .forEach(path -> {
+                            addToZip(source, path, zos);
+                            fileCount.incrementAndGet();
+                        });
+            }
+
+            if (fileCount.get() == 0) {
+                Files.deleteIfExists(tempFile);
+                throw new IllegalStateException(
+                        "No files found to backup in source directory: " + source
+                );
             }
 
             long size = Files.size(tempFile);
+
+            System.out.printf("Archive created: %d file(s), size: %.2f MB%n",
+                    fileCount.get(),
+                    size / (1024.0 * 1024.0)
+            );
 
             return new Archive(
                     job.getId(),

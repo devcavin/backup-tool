@@ -51,8 +51,20 @@ public class App {
         System.out.println("Source: " + sourcePath);
         System.out.println("Destination: " + destinationPath);
 
-        UUID jobId = createJob.execute("automated-backup", sourcePath, destinationPath);
-        System.out.println("Backup job created with ID: " + jobId);
+        UUID jobId;
+        try {
+            jobId = createJob.execute("automated-backup", sourcePath, destinationPath);
+            System.out.println("Backup job created with ID: " + jobId);
+        } catch (IllegalArgumentException e) {
+            System.err.println("\n=== ERROR ===");
+            System.err.println(e.getMessage());
+            System.err.println("\nPlease check:");
+            System.err.println("  - Source directory exists and is readable");
+            System.err.println("  - Source directory is not empty");
+            System.err.println("  - Destination directory is writable");
+            System.exit(1);
+            return; // Never reached, but keeps compiler happy
+        }
 
         if (intervalMinutes > 0) {
             // Scheduled mode
@@ -63,7 +75,6 @@ public class App {
             ScheduledBackupService scheduler = new ScheduledBackupService(runJob);
             scheduler.scheduleBackup(jobId, intervalMinutes);
 
-            // Add shutdown hook to clean up gracefully
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 System.out.println("\nShutdown signal received...");
                 scheduler.shutdown();
